@@ -289,7 +289,7 @@ function render(){
   }else rows.innerHTML=expenses.map(e=>{
     const all=e.w.length===PEOPLE.length;
     return`<tr><td class="num">${e.d}</td><td>${e.l}${e.by?`<div class="muted" style="font-size:11px">por ${e.by}</div>`:''}</td><td class="r num">${fmt(e.v)}${brl(e.v)}</td><td><span class="avatar" style="width:24px;height:24px;font-size:10px;margin-right:6px">${ini(e.p)}</span>${e.p}</td>
-    <td><span class="chip ${all?'':'part'}">${all?'todos':'menos Queiroz'}</span></td>
+    <td><span class="chip ${all?'':'part'}">${all?'todos':'menos Queiroz Family'}</span></td>
     <td><div class="who">${PEOPLE.map(p=>`<span class="${e.w.includes(p)?'':'off'}">${p}</span>`).join('')}</div></td>
     <td class="r num muted">${fmt(e.v/e.w.length)} <span style="font-size:11px">÷${e.w.length}</span></td>
     <td>${canWrite?`<button class="del" type="button" data-id="${e.id}" aria-label="Remover">×</button>`:''}</td></tr>`}).join('');
@@ -310,7 +310,7 @@ function render(){
 
   const top=Object.entries(paid).sort((a,b)=>b[1]-a[1])[0];
   document.getElementById('explain').innerHTML=`<div><b>Como funciona:</b> cada gasto é dividido igualmente entre quem participou. ${top&&top[1]>0?`<b>${top[0]}</b> adiantou mais dinheiro (${fmt(top[1])}), por isso recebe.`:''}</div>
-   <div>Gastos marcados <b>menos Queiroz</b> não entram na conta de Piero &amp; Mari, então eles consomem menos que a média.</div>`;
+   <div>Gastos marcados <b>menos Queiroz Family</b> não entram na conta de Piero &amp; Mari, então eles consomem menos que a média.</div>`;
 }
 
 function setWritable(on){
@@ -326,7 +326,7 @@ function buildForm(){
   document.getElementById('fBy').innerHTML+=PEOPLE.map(p=>`<option>${p}</option>`).join('');
   try{const b=localStorage.getItem('racha_by');if(b)document.getElementById('fBy').value=b}catch(e){}
   document.getElementById('fParts').innerHTML=`<span class="eyebrow" style="align-self:center;margin-right:6px">Participa:</span>`+PEOPLE.map(p=>`<label><input type="checkbox" name="part" value="${p}" checked>${p}</label>`).join('')
-   +`<button class="btn ghost" type="button" id="btnAll" style="padding:6px 10px;font-size:12px">todos</button><button class="btn ghost" type="button" id="btnSQ" style="padding:6px 10px;font-size:12px">menos Queiroz</button>`;
+   +`<button class="btn ghost" type="button" id="btnAll" style="padding:6px 10px;font-size:12px">todos</button><button class="btn ghost" type="button" id="btnSQ" style="padding:6px 10px;font-size:12px">menos Queiroz Family</button>`;
   const set=list=>document.querySelectorAll('input[name=part]').forEach(c=>c.checked=list.includes(c.value));
   document.getElementById('btnAll').onclick=()=>set(ALL);
   document.getElementById('btnSQ').onclick=()=>set(SEM_QUEIROZ);
