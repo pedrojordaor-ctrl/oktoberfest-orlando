@@ -114,7 +114,8 @@ tfoot td{font-weight:700;background:#f5f7fa}
 .bal .nm{font-weight:700;font-size:15px}
 .bal .st{font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px}
 .st.rec{background:var(--good-soft);color:var(--good)} .st.pay{background:var(--warn-soft);color:var(--warn)} .st.ok{background:var(--accent-soft);color:var(--accent)}
-.bal .rows{display:grid;grid-template-columns:1fr auto;gap:2px 12px;font-size:13px;color:var(--muted)}
+.bal .rows{display:grid;grid-template-columns:1fr auto;gap:4px 12px;font-size:13px;color:var(--muted)}
+.bal .rows .num{text-align:right}
 .bal .rows .num{color:var(--ink)}
 .bal .net{display:flex;justify-content:space-between;align-items:baseline;border-top:1px solid var(--line);padding-top:8px;font-weight:700}
 .bal .net .num{font-size:20px}
@@ -134,6 +135,13 @@ tfoot td{font-weight:700;background:#f5f7fa}
 .explain{background:var(--accent-soft);border-radius:10px;padding:14px 16px;font-size:14px;margin-top:14px;display:grid;gap:6px}
 .explain b{color:var(--accent)}
 .status{background:var(--warn-soft);color:var(--warn);border-radius:10px;padding:10px 14px;font-size:13px;margin-top:12px}
+.brl{display:block;font-size:11.5px;color:var(--muted);font-family:var(--mono);font-weight:500;line-height:1.2;margin-top:2px}
+.tile .brl{font-size:13px}
+.tr .brl{font-size:12px}
+.bal .net .brl{font-size:12px;text-align:right}
+.fx{display:flex;flex-wrap:wrap;align-items:center;gap:8px 14px;background:#f5f7fa;border:1.5px solid var(--line);border-radius:12px;padding:10px 14px;margin-top:12px;font-size:13px}
+.fx input{font:inherit;font-family:var(--mono);width:92px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;background:#fff;color:var(--ink)}
+.fx .src{color:var(--muted)}
 .toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:999px;font-size:14px;font-weight:700;z-index:20;box-shadow:0 6px 20px rgba(0,0,0,.2)}
 .toast.bad{background:var(--warn);color:#fff}
 @media (prefers-reduced-motion:no-preference){.tr,.bal,.tile{transition:transform .15s}.tr:hover{transform:translateX(2px)}}
@@ -159,6 +167,7 @@ tfoot td{font-weight:700;background:#f5f7fa}
 
 <section id="resumo">
   <div class="tiles" id="tiles"></div>
+  <div class="fx"><span class="eyebrow">Câmbio do dia</span> <label for="fxRate">US$ 1 = R$</label> <input id="fxRate" inputmode="decimal" placeholder="5,00"> <span class="src" id="fxSrc">buscando cotação…</span></div>
 </section>
 
 <section id="grupo">
@@ -227,6 +236,9 @@ let expenses=[];      // vem do banco compartilhado
 let db=null,canWrite=true,loaded=false;
 let mode='couple';
 const fmt=n=>'$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+let fx=0;
+const fmtBRL=n=>'R$ '+n.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:2});
+const brl=(n,signed)=>fx?`<span class="brl">${signed&&n>0?'+':''}${n<0?'-':''}${fmtBRL(Math.abs(n)*fx)}</span>`:'';
 const r2=n=>Math.round(n*100)/100;
 const ini=n=>n.slice(0,2).toUpperCase();
 const coupleOf=p=>COUPLES.find(c=>c.includes(p));
@@ -263,10 +275,10 @@ function render(){
   const total=expenses.reduce((a,e)=>a+e.v,0);
   const n=wallets().length;
   document.getElementById('tiles').innerHTML=`
-   <div class="tile"><div class="eyebrow">Total gasto</div><div class="v num">${fmt(total)}</div></div>
+   <div class="tile"><div class="eyebrow">Total gasto</div><div class="v num">${fmt(total)}${brl(total)}</div></div>
    <div class="tile"><div class="eyebrow">Lançamentos</div><div class="v">${expenses.length} <small>gastos</small></div></div>
    <div class="tile"><div class="eyebrow">${mode==='couple'?'Casais':'Pessoas'}</div><div class="v">${n} <small>carteiras</small></div></div>
-   <div class="tile"><div class="eyebrow">Média por ${mode==='couple'?'casal':'pessoa'}</div><div class="v num">${fmt(total/n)}</div></div>
+   <div class="tile"><div class="eyebrow">Média por ${mode==='couple'?'casal':'pessoa'}</div><div class="v num">${fmt(total/n)}${brl(total/n)}</div></div>
    <div class="tile"><div class="eyebrow">Transferências</div><div class="v">${tr.length} <small>para zerar</small></div></div>`;
 
   document.getElementById('people').innerHTML=COUPLES.map(c=>`<div class="couple"><span class="avatar">${ini(c[0])}</span><span class="name">${c[0]}</span><span class="plus">+</span><span class="avatar">${ini(c[1])}</span><span class="name">${c[1]}</span></div>`).join('');
@@ -276,7 +288,7 @@ function render(){
     rows.innerHTML=`<tr><td colspan="8" class="muted" style="padding:28px;text-align:center">${loaded?'Nenhum gasto ainda. Use o formulário abaixo para lançar o primeiro.':'Carregando lançamentos…'}</td></tr>`;
   }else rows.innerHTML=expenses.map(e=>{
     const all=e.w.length===PEOPLE.length;
-    return`<tr><td class="num">${e.d}</td><td>${e.l}${e.by?`<div class="muted" style="font-size:11px">por ${e.by}</div>`:''}</td><td class="r num">${fmt(e.v)}</td><td><span class="avatar" style="width:24px;height:24px;font-size:10px;margin-right:6px">${ini(e.p)}</span>${e.p}</td>
+    return`<tr><td class="num">${e.d}</td><td>${e.l}${e.by?`<div class="muted" style="font-size:11px">por ${e.by}</div>`:''}</td><td class="r num">${fmt(e.v)}${brl(e.v)}</td><td><span class="avatar" style="width:24px;height:24px;font-size:10px;margin-right:6px">${ini(e.p)}</span>${e.p}</td>
     <td><span class="chip ${all?'':'part'}">${all?'todos':'menos Queiroz'}</span></td>
     <td><div class="who">${PEOPLE.map(p=>`<span class="${e.w.includes(p)?'':'off'}">${p}</span>`).join('')}</div></td>
     <td class="r num muted">${fmt(e.v/e.w.length)} <span style="font-size:11px">÷${e.w.length}</span></td>
@@ -290,10 +302,10 @@ function render(){
     const lab={rec:'recebe',pay:'paga',ok:'zerado'}[st];
     return`<div class="bal"><div class="top"><span class="nm">${w}</span><span class="st ${st}">${lab}</span></div>
      <div class="bar"><i style="width:${paid[w]/maxPaid*100}%"></i></div>
-     <div class="rows"><span>Pagou</span><span class="num">${fmt(paid[w])}</span><span>Consumiu</span><span class="num">${fmt(owed[w])}</span></div>
-     <div class="net ${st}"><span>Saldo</span><span class="num">${v>0?'+':''}${fmt(v).replace('$ -','-$ ')}</span></div></div>`}).join('');
+     <div class="rows"><span>Pagou</span><span class="num">${fmt(paid[w])}${brl(paid[w])}</span><span>Consumiu</span><span class="num">${fmt(owed[w])}${brl(owed[w])}</span></div>
+     <div class="net ${st}"><span>Saldo</span><span class="num">${v>0?'+':''}${fmt(v).replace('$ -','-$ ')}${brl(v,true)}</span></div></div>`}).join('');
 
-  document.getElementById('transfers').innerHTML=tr.length?tr.map(t=>`<div class="tr"><div class="from">${t.from}<div class="sub">paga</div></div><div class="arrow">──▶</div><div class="to">${t.to}<div class="sub">recebe</div></div><div class="amt num">${fmt(t.amt)}</div></div>`).join('')
+  document.getElementById('transfers').innerHTML=tr.length?tr.map(t=>`<div class="tr"><div class="from">${t.from}<div class="sub">paga</div></div><div class="arrow">──▶</div><div class="to">${t.to}<div class="sub">recebe</div></div><div class="amt num">${fmt(t.amt)}${brl(t.amt)}</div></div>`).join('')
     :'<div class="tr"><div class="from">Tudo zerado</div><div class="arrow"></div><div class="to"></div><div class="amt">$ 0,00</div></div>';
 
   const top=Object.entries(paid).sort((a,b)=>b[1]-a[1])[0];
@@ -351,6 +363,16 @@ document.getElementById('rows').addEventListener('click',async ev=>{
 document.getElementById('modeCouple').onclick=()=>{mode='couple';document.getElementById('modeCouple').classList.add('on');document.getElementById('modePerson').classList.remove('on');render()};
 document.getElementById('modePerson').onclick=()=>{mode='person';document.getElementById('modePerson').classList.add('on');document.getElementById('modeCouple').classList.remove('on');render()};
 buildForm();render();
+(function(){
+  const inp=document.getElementById('fxRate'),src=document.getElementById('fxSrc');
+  const apply=(r,label)=>{fx=r;inp.value=r.toLocaleString('pt-BR',{minimumFractionDigits:2,maximumFractionDigits:4});src.textContent=label;render()};
+  inp.addEventListener('change',()=>{const r=parseFloat(inp.value.replace(',','.'));if(r>0){apply(r,'ajustado manualmente');try{localStorage.setItem('racha_fx',String(r))}catch(e){}}});
+  fetch('https://economia.awesomeapi.com.br/last/USD-BRL').then(r=>r.json()).then(j=>{
+    const q=j.USDBRL;const r=parseFloat(q.bid);const d=new Date(q.create_date.replace(' ','T'));
+    apply(r,'cotação comercial (AwesomeAPI) · '+d.toLocaleDateString('pt-BR')+' '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}));
+  }).catch(()=>{let r=0;try{r=parseFloat(localStorage.getItem('racha_fx'))||0}catch(e){}
+    if(r>0)apply(r,'última cotação salva');else src.textContent='não consegui buscar a cotação; digite o câmbio.'});
+})();
 
 const SB_URL='https://melfdegjbfnspgfiptpd.supabase.co', SB_KEY='sb_publishable_iG8VZ-_pBFFyryic3-v53g_pX6YhNgI', VIAGEM='oktoberfest-orlando';
 const sb=window.supabase.createClient(SB_URL,SB_KEY);
